@@ -12,6 +12,10 @@ const NAV_LINKS = [
 
 export function TopNav({ currentUser }: { currentUser: { handle: string } | null }) {
   const pathname = usePathname();
+  // Logged in: the avatar on the right already links to /profile. Logged
+  // out: there's no avatar, so surface it as a plain nav link instead —
+  // /profile itself falls back to a sample profile when there's no session.
+  const links = currentUser ? NAV_LINKS : [...NAV_LINKS, { href: '/profile', label: 'Profil' }];
 
   return (
     <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-3">
@@ -20,7 +24,7 @@ export function TopNav({ currentUser }: { currentUser: { handle: string } | null
           VID<span className="text-amber">I</span>
         </Link>
         <nav className="flex items-center gap-6">
-          {NAV_LINKS.map((link) => {
+          {links.map((link) => {
             const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
             return (
               <Link
