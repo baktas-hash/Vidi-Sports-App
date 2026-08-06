@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "npm run -w @vidi/web dev",
     "build": "npm run -w @vidi/web build",
+    "start": "npm run -w @vidi/web start",
     "typecheck": "tsc -b packages/shared packages/db data && npm run -w @vidi/web typecheck",
     "test": "npm run -w @vidi/shared test",
     "db:migrate": "npm run -w @vidi/data migrate",
