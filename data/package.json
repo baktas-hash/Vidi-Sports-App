@@ -1,0 +1,21 @@
+{
+  "name": "@vidi/data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "tsx --env-file-if-exists=../.env src/migrate.ts",
+    "seed:sports": "tsx --env-file-if-exists=../.env src/seed-sports.ts",
+    "seed:demo": "tsx --env-file-if-exists=../.env src/seed-demo.ts",
+    "reset": "tsx --env-file-if-exists=../.env src/reset.ts",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@vidi/db": "*",
+    "@vidi/shared": "*",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10"
+  }
+}

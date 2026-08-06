@@ -1,0 +1,29 @@
+{
+  "name": "vidi",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "data"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run -w @vidi/web dev",
+    "build": "npm run -w @vidi/web build",
+    "typecheck": "tsc -b packages/shared packages/db data && npm run -w @vidi/web typecheck",
+    "test": "npm run -w @vidi/shared test",
+    "db:migrate": "npm run -w @vidi/data migrate",
+    "db:seed": "npm run -w @vidi/data seed:sports",
+    "db:seed:demo": "npm run -w @vidi/data seed:demo",
+    "db:reset": "npm run -w @vidi/data reset"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

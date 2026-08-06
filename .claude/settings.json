@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql -qtA postgres://localhost:5432/vidi_dev -c \"select filename from schema_migration order by filename\")",
+      "Bash(node -e ' *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(rm -f packages/*/tsconfig.tsbuildinfo data/tsconfig.tsbuildinfo packages/*/dist -r)",
+      "Bash(echo \"TYPECHECK EXIT=$?\")",
+      "Bash(curl -s http://localhost:3000/api/events)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/events)",
+      "Bash(curl -s -w \"\\\\nHTTP %{http_code}\\\\n\" http://localhost:3000/api/events)",
+      "Bash(grep -rn \"^| \\\\`root\\\\`\" -A 2 node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/turbopack.md)",
+      "Bash(echo \"typecheck: $?\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"next-server\")"
+    ]
+  }
+}

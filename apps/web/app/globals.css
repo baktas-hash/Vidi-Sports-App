@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Vidi is unconditionally dark — like the design prototype, not a
+   light/dark toggle. No prefers-color-scheme override needed. */
+:root {
+  --canvas: #0f1114;
+  --surface: #181b20;
+  --surface-2: #22262c;
+  --line: #2e333b;
+  --muted: #868d97;
+  --dim: #b5bbc3;
+  --ink: #eceef1;
+  --amber: #ffb020;
+  --live: #ff4438;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --color-ink: var(--ink);
+  --color-amber: var(--amber);
+  --color-live: var(--live);
+
+  --font-display: var(--font-barlow-condensed);
+  --font-sans: var(--font-instrument-sans);
+  --font-serif: var(--font-newsreader);
+  --font-mono: var(--font-dm-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"],
+    // Internal imports are extension-less. Turbopack does not map './x.js' to
+    // './x.ts' and offers no way to configure it, so NodeNext-style specifiers
+    // would break `next dev` the moment the web app imports this package.
+    "module": "preserve",
+    "moduleResolution": "bundler"
+  },
+  "include": ["src/**/*.ts"]
+}

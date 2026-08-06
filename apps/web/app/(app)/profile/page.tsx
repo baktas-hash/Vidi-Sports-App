@@ -1,0 +1,52 @@
+import { redirect } from 'next/navigation';
+
+import { getSessionUser } from '@/lib/auth/session';
+import { getUserDiary } from '@/lib/queries/logs';
+import { getUserProfile } from '@/lib/queries/users';
+import { ProfileTabs } from '@/components/profile/ProfileTabs';
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <b className="block font-display text-[17px] font-extrabold tabular-nums">{value}</b>
+      <span className="font-mono text-[8.5px] uppercase tracking-wide text-muted">{label}</span>
+    </div>
+  );
+}
+
+// Own profile only, at a stable /profile URL — viewing other users by handle
+// is out of scope for this pass (the design prototype only ever shows one).
+export default async function ProfilePage() {
+  const user = await getSessionUser();
+  if (!user) redirect('/login');
+
+  const [profile, diary] = await Promise.all([getUserProfile(user.handle, user.id), getUserDiary(user.id, user.id)]);
+  if (!profile) redirect('/login');
+
+  return (
+    <div>
+      <div className="flex items-center gap-3.5 px-4 pt-4 lg:px-8 lg:pt-8">
+        <div
+          className="grid h-[58px] w-[58px] flex-none place-items-center rounded-full font-display text-2xl font-extrabold text-neutral-950"
+          style={{ background: 'linear-gradient(140deg,#FFB020,#FF7A18)' }}
+        >
+          {profile.handle[0]?.toUpperCase()}
+        </div>
+        <div>
+          <div className="font-display text-[22px] font-extrabold uppercase leading-none lg:text-[28px]">
+            {profile.displayName ?? profile.handle}
+          </div>
+          {profile.bio ? <p className="mt-1 font-serif text-[12px] text-dim">{profile.bio}</p> : null}
+        </div>
+      </div>
+
+      <div className="flex gap-5 border-b border-line px-4 py-3 lg:px-8">
+        <Stat label="event" value={profile.logCount} />
+        <Stat label="takipçi" value={profile.followerCount} />
+        <Stat label="takip" value={profile.followingCount} />
+      </div>
+
+      <ProfileTabs diary={diary} />
+    </div>
+  );
+}

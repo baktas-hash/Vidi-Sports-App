@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "_readme": [
+    "Editorial source of truth for sport and format rows. Owned by content ops,",
+    "not by code. `npm run db:seed` upserts it and never deletes.",
+    "",
+    "segmentLabel lives on the FORMAT, not the sport, because the unit changes:",
+    "a Test match is measured in days, an ODI in innings, both are cricket.",
+    "segmentCount null = open ended (deciding sets, overtime, extra innings)."
+  ],
+  "sports": [
+    {
+      "slug": "football",
+      "name": "Futbol",
+      "topology": "timed_halves",
+      "isTeamSport": true,
+      "sortOrder": 10,
+      "formats": [
+        {
+          "slug": "regulation",
+          "name": "Normal süre",
+          "segmentLabel": "yarı",
+          "segmentCount": 2,
+          "isDefault": true
+        },
+        {
+          "slug": "extra-time",
+          "name": "Uzatmalı",
+          "segmentLabel": "yarı",
+          "segmentCount": 4,
+          "notes": "2 normal + 2 uzatma yarısı."
+        },
+        {
+          "slug": "penalties",
+          "name": "Penaltılara giden",
+          "segmentLabel": "bölüm",
+          "segmentCount": 5,
+          "notes": "Seri penaltı 5. bölüm sayılır; sonunu görme hesabı buna dayanıyor."
+        }
+      ]
+    },
+    {
+      "slug": "basketball",
+      "name": "Basketbol",
+      "topology": "timed_periods",
+      "isTeamSport": true,
+      "sortOrder": 20,
+      "formats": [
+        {
+          "slug": "regulation",
+          "name": "Normal süre",
+          "segmentLabel": "periyot",
+          "segmentCount": 4,
+          "isDefault": true
+        },
+        {
+          "slug": "overtime",
+          "name": "Uzatmalı",
+          "segmentLabel": "periyot",
+          "segmentCount": null,
+          "notes": "Uzatma sayısı sınırsız; gerçek sayı event.segment_count_actual'da."
+        }
+      ]
+    },
+    {
+      "slug": "tennis",
+      "name": "Tenis",
+      "topology": "set_based",
+      "isTeamSport": false,
+      "sortOrder": 30,
+      "formats": [
+        {
+          "slug": "best-of-3",
+          "name": "3 sette",
+          "segmentLabel": "set",
+          "segmentCount": 3,
+          "isDefault": true
+        },
+        {
+          "slug": "best-of-5",
+          "name": "5 sette",
+          "segmentLabel": "set",
+          "segmentCount": 5,
+          "notes": "Grand Slam erkekler. 3-0 biten maçta actual=3 olur."
+        }
+      ]
+    },
+    {
+      "slug": "volleyball",
+      "name": "Voleybol",
+      "topology": "set_based",
+      "isTeamSport": true,
+      "sortOrder": 40,
+      "formats": [
+        {
+          "slug": "best-of-5",
+          "name": "5 sette",
+          "segmentLabel": "set",
+          "segmentCount": 5,
+          "isDefault": true
+        },
+        {
+          "slug": "best-of-3",
+          "name": "3 sette",
+          "segmentLabel": "set",
+          "segmentCount": 3
+        }
+      ]
+    },
+    {
+      "slug": "american-football",
+      "name": "Amerikan futbolu",
+      "topology": "timed_periods",
+      "isTeamSport": true,
+      "sortOrder": 50,
+      "formats": [
+        {
+          "slug": "regulation",
+          "name": "Normal süre",
+          "segmentLabel": "çeyrek",
+          "segmentCount": 4,
+          "isDefault": true
+        },
+        {
+          "slug": "overtime",
+          "name": "Uzatmalı",
+          "segmentLabel": "çeyrek",
+          "segmentCount": null
+        }
+      ]
+    },
+    {
+      "slug": "cricket",
+      "name": "Kriket",
+      "topology": "innings_based",
+      "isTeamSport": true,
+      "sortOrder": 60,
+      "formats": [
+        {
+          "slug": "t20",
+          "name": "T20",
+          "segmentLabel": "devre",
+          "segmentCount": 2,
+          "isDefault": true
+        },
+        {
+          "slug": "odi",
+          "name": "ODI",
+          "segmentLabel": "devre",
+          "segmentCount": 2
+        },
+        {
+          "slug": "test",
+          "name": "Test",
+          "segmentLabel": "gün",
+          "segmentCount": 5,
+          "notes": "Segment birimi gün. 4 günde biten maçta actual=4; 5. gün yoksa sonunu görme 4. güne bakar."
+        }
+      ]
+    },
+    {
+      "slug": "rugby-union",
+      "name": "Ragbi (union)",
+      "topology": "timed_halves",
+      "isTeamSport": true,
+      "sortOrder": 70,
+      "formats": [
+        {
+          "slug": "regulation",
+          "name": "Normal süre",
+          "segmentLabel": "yarı",
+          "segmentCount": 2,
+          "isDefault": true
+        },
+        {
+          "slug": "extra-time",
+          "name": "Uzatmalı",
+          "segmentLabel": "yarı",
+          "segmentCount": 4
+        }
+      ]
+    },
+    {
+      "slug": "rugby-league",
+      "name": "Ragbi (league)",
+      "topology": "timed_halves",
+      "isTeamSport": true,
+      "sortOrder": 80,
+      "formats": [
+        {
+          "slug": "regulation",
+          "name": "Normal süre",
+          "segmentLabel": "yarı",
+          "segmentCount": 2,
+          "isDefault": true
+        },
+        {
+          "slug": "golden-point",
+          "name": "Golden point",
+          "segmentLabel": "yarı",
+          "segmentCount": null
+        }
+      ]
+    },
+    {
+      "slug": "boxing",
+      "name": "Boks",
+      "topology": "round_based",
+      "isTeamSport": false,
+      "sortOrder": 90,
+      "formats": [
+        {
+          "slug": "twelve-round",
+          "name": "12 raunt",
+          "segmentLabel": "raunt",
+          "segmentCount": 12,
+          "isDefault": true,
+          "notes": "Nakavtla biten maçta actual gerçek raunt sayısı olur."
+        },
+        {
+          "slug": "ten-round",
+          "name": "10 raunt",
+          "segmentLabel": "raunt",
+          "segmentCount": 10
+        }
+      ]
+    },
+    {
+      "slug": "mma",
+      "name": "MMA",
+      "topology": "round_based",
+      "isTeamSport": false,
+      "sortOrder": 95,
+      "formats": [
+        {
+          "slug": "three-round",
+          "name": "3 raunt",
+          "segmentLabel": "raunt",
+          "segmentCount": 3,
+          "isDefault": true
+        },
+        {
+          "slug": "five-round",
+          "name": "5 raunt (ana maç)",
+          "segmentLabel": "raunt",
+          "segmentCount": 5
+        }
+      ]
+    }
+  ]
+}
