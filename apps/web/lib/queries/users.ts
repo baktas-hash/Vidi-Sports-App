@@ -26,6 +26,11 @@ interface CountsRow {
   following_count: number;
 }
 
+export async function getUserIdByHandle(handle: string): Promise<string | null> {
+  const row = await queryMaybeOne<{ id: string }>('select id from app_user where handle = $1', [handle]);
+  return row?.id ?? null;
+}
+
 export async function getUserProfile(
   handle: string,
   viewerId: string | null,
