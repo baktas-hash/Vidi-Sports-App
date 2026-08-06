@@ -17,11 +17,13 @@ function Stat({ label, value }: { label: string; value: number }) {
 // Own profile only, at a stable /profile URL — viewing other users by handle
 // is out of scope for this pass (the design prototype only ever shows one).
 export default async function ProfilePage() {
+  // Login isn't wired up end-to-end yet (needs a reachable Postgres once
+  // this is deployed) — bounce to home instead of a login wall for now.
   const user = await getSessionUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/');
 
   const [profile, diary] = await Promise.all([getUserProfile(user.handle, user.id), getUserDiary(user.id, user.id)]);
-  if (!profile) redirect('/login');
+  if (!profile) redirect('/');
 
   return (
     <div>

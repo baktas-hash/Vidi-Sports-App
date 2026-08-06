@@ -9,8 +9,10 @@ export default async function NewLogPage({
 }: {
   searchParams: Promise<{ event?: string }>;
 }) {
+  // Login isn't wired up end-to-end yet (needs a reachable Postgres once
+  // this is deployed) — bounce to home instead of a login wall for now.
   const user = await getSessionUser();
-  if (!user) redirect('/login');
+  if (!user) redirect('/');
 
   const { event: eventSlug } = await searchParams;
   const prefillEvent = eventSlug ? await getEventBySlug(eventSlug) : null;
