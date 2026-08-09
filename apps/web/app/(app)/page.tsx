@@ -99,7 +99,7 @@ export default async function HomePage() {
         </div>
 
         <aside className="mt-5 flex flex-col gap-3 px-4 lg:sticky lg:top-6 lg:mt-0 lg:px-0 lg:pr-8">
-          {viewerStats ? <ArchiveStatsPanel stats={viewerStats} /> : null}
+          <ArchiveStatsPanel stats={viewerStats} />
           <PendingToLogPanel events={pendingToLog} />
           <CompactFixtureCalendar events={upcoming} sports={topSports} />
         </aside>
