@@ -19,27 +19,29 @@ export function TopNav({ currentUser }: { currentUser: { handle: string } | null
 
   return (
     <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-3">
-      <div className="flex items-center gap-9">
-        <Link href="/" className="font-display text-xl font-extrabold uppercase tracking-wide">
-          VID<span className="text-amber">I</span>
-        </Link>
-        <nav className="flex items-center gap-6">
-          {links.map((link) => {
-            const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`font-display text-[13px] font-bold uppercase tracking-wide ${
-                  active ? 'text-amber' : 'text-dim'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      <Link href="/" className="font-display text-xl font-extrabold uppercase tracking-wide">
+        VID<span className="text-amber">I</span>
+      </Link>
+
+      {/* Its own flex item (not grouped with the logo) so justify-between's
+          even gap distribution pulls it away from the logo instead of
+          sitting flush next to it. */}
+      <nav className="flex items-center gap-8">
+        {links.map((link) => {
+          const active = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`border-b-2 pb-1 font-display text-[15px] font-extrabold uppercase tracking-wider ${
+                active ? 'border-amber text-ink' : 'border-transparent text-muted'
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div className="flex items-center gap-3">
         {currentUser ? (
