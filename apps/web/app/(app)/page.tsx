@@ -2,45 +2,32 @@ import Link from 'next/link';
 
 import { getSessionUser } from '@/lib/auth/session';
 import { searchCompetitions } from '@/lib/queries/competitions';
-import { searchEvents, type EventCard } from '@/lib/queries/events';
+import { getUpcomingEvents, searchEvents } from '@/lib/queries/events';
 import { getFeed, getViewerTopSports } from '@/lib/queries/logs';
+import { getFeaturedLists } from '@/lib/queries/lists';
 import { Poster } from '@/components/visuals';
 import { CompetitionCard } from '@/components/competition/CompetitionCard';
 import { EventPosterCard } from '@/components/event/EventPosterCard';
+import { FixtureCalendar } from '@/components/fixture/FixtureCalendar';
+import { ListCard } from '@/components/list/ListCard';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 
-function FixtureRow({ event }: { event: EventCard }) {
-  const [a, b] = [...event.participants].sort((x, y) => x.side - y.side);
-  return (
-    <Link
-      href={`/events/${event.slug}`}
-      className="flex items-center gap-2.5 rounded-[9px] border border-line bg-surface px-3 py-2.5"
-    >
-      <div className="w-11 flex-none text-center font-display text-[15px] font-bold tabular-nums text-dim">
-        {event.startsAt
-          ? new Date(event.startsAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-          : '–'}
-      </div>
-      <div className="min-w-0 flex-1 truncate font-display text-[14.5px] font-semibold">
-        {a?.name} <span className="text-muted">–</span> {b?.name}
-      </div>
-      <div className="flex-none font-mono text-[8.5px] uppercase text-muted">{event.competition?.name}</div>
-    </Link>
-  );
-}
-
 export default async function HomePage() {
   const user = await getSessionUser();
   const viewerId = user?.id ?? null;
+  const topSports = viewerId ? await getViewerTopSports(viewerId) : [];
 
-  const [recentFeed, trending, upcoming, competitions, topSports] = await Promise.all([
+  const [recentFeed, trending, upcoming, competitions, featuredLists] = await Promise.all([
     getFeed({ scope: 'global', viewerId, limit: 9 }),
     searchEvents({ sort: 'trending', limit: 6 }),
-    searchEvents({ status: 'scheduled', limit: 4 }),
+    // Scoped to the viewer's most-logged sports once they have any — same
+    // MYSPORTS-scoped calendar as the prototype, all sports for a logged-out
+    // visitor or a viewer with no logs yet.
+    getUpcomingEvents({ sportSlugs: topSports.length ? topSports.map((s) => s.slug) : undefined, limit: 20 }),
     searchCompetitions({ limit: 4 }),
-    viewerId ? getViewerTopSports(viewerId) : Promise.resolve([]),
+    getFeaturedLists(6),
   ]);
 
   return (
@@ -80,17 +67,7 @@ export default async function HomePage() {
       ) : null}
 
       <SectionHeader title="Yaklaşan fikstür" />
-      {upcoming.length ? (
-        <div className="flex flex-col gap-1.5 px-4 pb-1 lg:grid lg:grid-cols-2 lg:gap-2 lg:px-8">
-          {upcoming.map((event) => (
-            <FixtureRow key={event.id} event={event} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState>
-          Şu an planlanmış bir event yok — bu demo verisi baştan sona oynanmış maçlardan oluşuyor.
-        </EmptyState>
-      )}
+      <FixtureCalendar events={upcoming} />
 
       <SectionHeader title="En çok loglanan" />
       <div className="grid grid-cols-3 gap-2 px-4 pb-1 lg:grid-cols-6 lg:gap-3 lg:px-8">
@@ -115,8 +92,16 @@ export default async function HomePage() {
         ))}
       </div>
 
-      <SectionHeader title="Listeler" />
-      <EmptyState>Listeler yakında.</EmptyState>
+      <SectionHeader title="Listeler" href="/lists/new" linkLabel="Yeni liste" />
+      {featuredLists.length ? (
+        <div className="px-4 lg:px-8">
+          {featuredLists.map((list) => (
+            <ListCard key={list.id} list={list} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState>Henüz bir liste yok.</EmptyState>
+      )}
     </>
   );
 }

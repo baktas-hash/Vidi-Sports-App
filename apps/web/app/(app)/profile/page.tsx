@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { getSessionUser } from '@/lib/auth/session';
 import { getUserDiary } from '@/lib/queries/logs';
+import { getListsForUser } from '@/lib/queries/lists';
 import { getUserIdByHandle, getUserProfile } from '@/lib/queries/users';
 import { ProfileTabs } from '@/components/profile/ProfileTabs';
 
@@ -28,9 +29,10 @@ export default async function ProfilePage() {
   const profileUserId = user?.id ?? (await getUserIdByHandle(handle));
   if (!profileUserId) redirect('/');
 
-  const [profile, diary] = await Promise.all([
+  const [profile, diary, lists] = await Promise.all([
     getUserProfile(handle, viewerId),
     getUserDiary(profileUserId, viewerId),
+    getListsForUser(profileUserId, viewerId),
   ]);
   if (!profile) redirect('/');
 
@@ -62,7 +64,7 @@ export default async function ProfilePage() {
         <Stat label="takip" value={profile.followingCount} />
       </div>
 
-      <ProfileTabs diary={diary} />
+      <ProfileTabs diary={diary} lists={lists} />
     </div>
   );
 }

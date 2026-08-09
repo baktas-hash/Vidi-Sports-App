@@ -639,6 +639,87 @@ async function main(): Promise<void> {
         ],
       );
 
+      // --- scheduled fixtures ---------------------------------------------
+      // Everything above is 'finished' — the home/competition "upcoming
+      // fixtures" calendar has nothing to group by day without at least a
+      // few 'scheduled' rows with a real future starts_at. Real Date.now(),
+      // not a literal timestamp: this file has no "today" to pin to, and a
+      // hardcoded future date would eventually become a past one.
+      function daysFromNow(days: number, hour: number, minute = 0): Date {
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        d.setHours(hour, minute, 0, 0);
+        return d;
+      }
+
+      async function scheduledFixture(
+        sportId: string,
+        competitionId: string,
+        seasonId: string,
+        formatId: string,
+        venueId: string,
+        home: string,
+        away: string,
+        homeEntityId: string,
+        awayEntityId: string,
+        startsAt: Date,
+        competitionSlugHint: string,
+      ): Promise<string> {
+        const eventId = await id(
+          client,
+          `insert into event (sport_id, competition_id, season_id, format_id, venue_id, slug, starts_at, status)
+           values ($1, $2, $3, $4, $5, $6, $7, 'scheduled')
+           returning id`,
+          [
+            sportId, competitionId, seasonId, formatId, venueId,
+            eventSlug({
+              sides: [home, away],
+              competition: competitionSlugHint,
+              date: startsAt.toISOString().slice(0, 10),
+            }),
+            startsAt,
+          ],
+        );
+        await client.query(
+          `insert into event_participant (event_id, entity_id, side) values ($1, $2, 1), ($1, $3, 2)`,
+          [eventId, homeEntityId, awayEntityId],
+        );
+        return eventId;
+      }
+
+      await scheduledFixture(
+        football, superLig, superLig2526, footballRegulation, vodafonePark,
+        'Beşiktaş', 'Galatasaray', clubIds.get('Beşiktaş')!, clubIds.get('Galatasaray')!,
+        daysFromNow(1, 19, 0), 'Süper Lig',
+      );
+      await scheduledFixture(
+        football, superLig, superLig2526, footballRegulation, ramsPark,
+        'Fenerbahçe', 'Beşiktaş', clubIds.get('Fenerbahçe')!, clubIds.get('Beşiktaş')!,
+        daysFromNow(4, 20, 0), 'Süper Lig',
+      );
+      await scheduledFixture(
+        volleyball, sultanlarLigi, sultanlarLigi2526, volleyballBestOf5, burhanFelek,
+        'Fenerbahçe', 'VakıfBank', clubIds.get('Fenerbahçe')!, clubIds.get('VakıfBank')!,
+        daysFromNow(2, 19, 30), 'Voleybol',
+      );
+      await scheduledFixture(
+        volleyball, cevChampionsLeague, cevCl2526, volleyballBestOf5, palaVerde,
+        'Eczacıbaşı Dynavit', 'Imoco Volley Conegliano',
+        clubIds.get('Eczacıbaşı Dynavit')!, clubIds.get('Imoco Volley Conegliano')!,
+        daysFromNow(6, 20, 0), 'CEV',
+      );
+      await scheduledFixture(
+        basketball, nba, nba2526, basketballRegulation, paycomCenter,
+        'Oklahoma City Thunder', 'Denver Nuggets',
+        clubIds.get('Oklahoma City Thunder')!, clubIds.get('Denver Nuggets')!,
+        daysFromNow(3, 18, 0), 'NBA',
+      );
+      await scheduledFixture(
+        cricket, theAshes, ashes2526, cricketTest, mcg,
+        'Australia', 'England', nationalTeams.get('Australia')!, nationalTeams.get('England')!,
+        daysFromNow(8, 10, 30), 'The Ashes',
+      );
+
       // --- user + logs ---------------------------------------------------
       // burkay gets a real password so `npm run dev` + POST /api/auth/login
       // works right away. The three below stay signup-less like burkay used
@@ -827,6 +908,47 @@ async function main(): Promise<void> {
            ($2, $4),
            ($4, $3)`,
         [elif, deniz, mert, user],
+      );
+
+      // --- lists -------------------------------------------------------
+      // Two of burkay's own, one editorial (user_id null) — exercises both
+      // branches of list.user_id and both getFeaturedLists/getListsForUser.
+      const fifthSetList = await id(
+        client,
+        `insert into list (user_id, slug, title, description, is_ranked, visibility)
+         values ($1, $2, $3, $4, false, 'public') returning id`,
+        [user, 'besinci-sete-kalanlar', 'Gördüğüm en iyi beşinci setler', 'Zirve segmenti beşinci set olan maçlar.'],
+      );
+      await client.query(
+        `insert into list_item (list_id, position, event_id) values ($1, 1, $2), ($1, 2, $3)`,
+        [fifthSetList, final2008, vbImo1],
+      );
+
+      const missedEndingList = await id(
+        client,
+        `insert into list (user_id, slug, title, description, is_ranked, visibility)
+         values ($1, $2, $3, $4, false, 'public') returning id`,
+        [user, 'sonunu-kacirdiklarim', 'Sonunu kaçırdıklarım', 'Bitmeden kapattığım ya da kaçırdığım maçlar.'],
+      );
+      await client.query(
+        `insert into list_item (list_id, position, event_id) values ($1, 1, $2), ($1, 2, $3)`,
+        [missedEndingList, final2008, thunderNuggets1],
+      );
+
+      const editorialList = await id(
+        client,
+        `insert into list (user_id, slug, title, description, is_ranked, visibility)
+         values (null, $1, $2, $3, true, 'public') returning id`,
+        [
+          'vidinin-one-cikardiklari',
+          "Vidi'nin öne çıkardıkları",
+          'Farklı sporlardan öne çıkan dört karşılaşma.',
+        ],
+      );
+      await client.query(
+        `insert into list_item (list_id, position, event_id) values
+           ($1, 1, $2), ($1, 2, $3), ($1, 3, $4), ($1, 4, $5)`,
+        [editorialList, final2008, derby, thunderCeltics1, ashesMcg],
       );
     });
 

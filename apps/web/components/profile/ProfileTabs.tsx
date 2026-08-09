@@ -3,9 +3,11 @@
 import { useState } from 'react';
 
 import type { LogDetail } from '@/lib/queries/logs';
+import type { ListSummary } from '@/lib/queries/lists';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StarRating } from '@/components/ui/StarRating';
 import { EventPosterCard } from '@/components/event/EventPosterCard';
+import { ListCard } from '@/components/list/ListCard';
 
 const TABS = [
   { key: 'diary', label: 'Günlük' },
@@ -24,7 +26,7 @@ function groupByMonth(logs: LogDetail[]): Array<[string, LogDetail[]]> {
   return [...groups.entries()];
 }
 
-export function ProfileTabs({ diary }: { diary: LogDetail[] }) {
+export function ProfileTabs({ diary, lists }: { diary: LogDetail[]; lists: ListSummary[] }) {
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('diary');
   const months = groupByMonth(diary);
 
@@ -73,7 +75,15 @@ export function ProfileTabs({ diary }: { diary: LogDetail[] }) {
         )
       ) : tab === 'lists' ? (
         <div className="pt-3">
-          <EmptyState>Listeler yakında.</EmptyState>
+          {lists.length ? (
+            <div className="px-4 lg:px-8">
+              {lists.map((list) => (
+                <ListCard key={list.id} list={list} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState>Henüz bir liste yok.</EmptyState>
+          )}
         </div>
       ) : (
         <div className="pt-3">

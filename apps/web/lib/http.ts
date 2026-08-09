@@ -76,6 +76,12 @@ function fromDatabaseError(error: unknown): Response | null {
     if (error.constraint?.includes('app_user_handle_key')) {
       return errorResponse('conflict', 'Bu kullanıcı adı alınmış.');
     }
+    if (error.constraint?.includes('list_user_slug_idx')) {
+      return errorResponse('conflict', 'Bu başlıkla zaten bir listen var.');
+    }
+    if (error.constraint?.includes('list_item_event_idx')) {
+      return errorResponse('conflict', 'Bu event zaten listede var.');
+    }
     return errorResponse('conflict', 'Kayıt zaten var.');
   }
 

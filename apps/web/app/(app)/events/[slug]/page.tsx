@@ -8,6 +8,7 @@ import { getEventRatingStats } from '@/lib/queries/stats';
 import { getCompetitionTheme } from '@/lib/visuals/competitionTheme';
 import { Scoreboard } from '@/components/visuals';
 import { RatingHistogram } from '@/components/event/RatingHistogram';
+import { AddToListButton } from '@/components/list/AddToListButton';
 import { LogListItem, MEDIUM_LABEL } from '@/components/log/LogListItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -90,13 +91,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
           >
             ＋ Logla
           </Link>
-          <button
-            disabled
-            title="Yakında"
-            className="cursor-not-allowed rounded-lg border border-line px-4 font-display text-[14px] font-semibold uppercase tracking-wide text-muted"
-          >
-            Listeye
-          </button>
+          <AddToListButton eventId={event.id} viewerHandle={user?.handle ?? null} />
         </div>
       </div>
 

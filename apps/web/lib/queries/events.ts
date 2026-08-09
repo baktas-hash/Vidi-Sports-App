@@ -233,6 +233,62 @@ export interface EventCard {
   logCount: number;
 }
 
+// Shared by searchEvents and getUpcomingEvents: same card shape, different
+// where/order. `log_count` is deliberately left out here — the two callers
+// select it themselves since one of them sorts by it.
+const EVENT_CARD_FIELDS_SQL = `
+  e.id, e.slug, e.title, e.starts_at, e.status, e.is_canonical,
+  s.slug as sport_slug, s.name as sport_name, s.topology as sport_topology,
+  c.slug as competition_slug, c.display_name as competition_name,
+  v.display_name as venue,
+  coalesce(
+    (select json_agg(json_build_object(
+              'entityId', en.id, 'slug', en.slug, 'name', en.display_name,
+              'shortName', en.short_name, 'side', ep.side, 'score', ep.score,
+              'scoreDetail', ep.score_detail, 'outcome', ep.outcome
+            ) order by ep.side)
+       from event_participant ep
+       join entity en on en.id = ep.entity_id
+      where ep.event_id = e.id),
+    '[]'
+  ) as participants
+`;
+
+interface EventCardRow {
+  id: string;
+  slug: string;
+  title: string | null;
+  starts_at: Date | null;
+  status: string;
+  is_canonical: boolean;
+  sport_slug: string;
+  sport_name: string;
+  sport_topology: string;
+  competition_slug: string | null;
+  competition_name: string | null;
+  venue: string | null;
+  participants: EventParticipant[];
+  log_count: number;
+}
+
+function toEventCardBase(row: EventCardRow): Omit<EventCard, 'logCount'> {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    startsAt: row.starts_at?.toISOString() ?? null,
+    status: row.status,
+    isCanonical: row.is_canonical,
+    sport: { slug: row.sport_slug, name: row.sport_name, topology: row.sport_topology },
+    competition:
+      row.competition_slug && row.competition_name
+        ? { slug: row.competition_slug, name: row.competition_name }
+        : null,
+    venue: row.venue,
+    participants: row.participants,
+  };
+}
+
 export async function searchEvents(params: EventSearchParams): Promise<EventCard[]> {
   const where: string[] = [];
   const values: unknown[] = [];
@@ -266,37 +322,8 @@ export async function searchEvents(params: EventSearchParams): Promise<EventCard
 
   values.push(params.limit);
 
-  const rows = await query<{
-    id: string;
-    slug: string;
-    title: string | null;
-    starts_at: Date | null;
-    status: string;
-    is_canonical: boolean;
-    sport_slug: string;
-    sport_name: string;
-    sport_topology: string;
-    competition_slug: string | null;
-    competition_name: string | null;
-    venue: string | null;
-    participants: EventParticipant[];
-    log_count: number;
-  }>(
-    `select e.id, e.slug, e.title, e.starts_at, e.status, e.is_canonical,
-            s.slug as sport_slug, s.name as sport_name, s.topology as sport_topology,
-            c.slug as competition_slug, c.display_name as competition_name,
-            v.display_name as venue,
-            coalesce(
-              (select json_agg(json_build_object(
-                        'entityId', en.id, 'slug', en.slug, 'name', en.display_name,
-                        'shortName', en.short_name, 'side', ep.side, 'score', ep.score,
-                        'scoreDetail', ep.score_detail, 'outcome', ep.outcome
-                      ) order by ep.side)
-                 from event_participant ep
-                 join entity en on en.id = ep.entity_id
-                where ep.event_id = e.id),
-              '[]'
-            ) as participants,
+  const rows = await query<EventCardRow>(
+    `select ${EVENT_CARD_FIELDS_SQL},
             (select count(*) from log l where l.event_id = e.id and l.visibility = 'public') as log_count
        from event e
        join sport s on s.id = e.sport_id
@@ -308,20 +335,47 @@ export async function searchEvents(params: EventSearchParams): Promise<EventCard
     values,
   );
 
-  return rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    startsAt: row.starts_at?.toISOString() ?? null,
-    status: row.status,
-    isCanonical: row.is_canonical,
-    sport: { slug: row.sport_slug, name: row.sport_name, topology: row.sport_topology },
-    competition:
-      row.competition_slug && row.competition_name
-        ? { slug: row.competition_slug, name: row.competition_name }
-        : null,
-    venue: row.venue,
-    participants: row.participants,
-    logCount: row.log_count,
-  }));
+  return rows.map((row) => ({ ...toEventCardBase(row), logCount: row.log_count }));
+}
+
+export interface UpcomingEventsParams {
+  /** Scope to the viewer's followed/most-logged sports; omit for everyone. */
+  sportSlugs?: string[] | undefined;
+  competitionId?: string | undefined;
+  limit: number;
+}
+
+// Separate from searchEvents rather than folded into its generic filter set:
+// "upcoming, ascending, sport-scoped" is a distinct enough shape (calendar,
+// not a search box) that overloading searchEvents' sort/status semantics
+// would risk the existing callers more than a few duplicated lines here do.
+export async function getUpcomingEvents(params: UpcomingEventsParams): Promise<EventCard[]> {
+  const where: string[] = [`e.status = 'scheduled'`, `e.starts_at >= now()`];
+  const values: unknown[] = [];
+
+  if (params.sportSlugs?.length) {
+    values.push(params.sportSlugs);
+    where.push(`s.slug = any($${values.length}::text[])`);
+  }
+  if (params.competitionId) {
+    values.push(params.competitionId);
+    where.push(`e.competition_id = $${values.length}`);
+  }
+
+  values.push(params.limit);
+
+  const rows = await query<EventCardRow>(
+    `select ${EVENT_CARD_FIELDS_SQL},
+            (select count(*) from log l where l.event_id = e.id and l.visibility = 'public') as log_count
+       from event e
+       join sport s on s.id = e.sport_id
+       left join competition c on c.id = e.competition_id
+       left join venue v on v.id = e.venue_id
+      where ${where.join(' and ')}
+      order by e.starts_at asc
+      limit $${values.length}`,
+    values,
+  );
+
+  return rows.map((row) => ({ ...toEventCardBase(row), logCount: row.log_count }));
 }

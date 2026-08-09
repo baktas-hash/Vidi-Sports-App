@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation';
 
 import { getSessionUser } from '@/lib/auth/session';
 import { getCompetitionBySlug, getCompetitionStandings } from '@/lib/queries/competitions';
+import { getUpcomingEvents } from '@/lib/queries/events';
 import { getFeed } from '@/lib/queries/logs';
 import { getCompetitionTheme } from '@/lib/visuals/competitionTheme';
 import { EventPosterCard } from '@/components/event/EventPosterCard';
 import { StandingsTable } from '@/components/competition/StandingsTable';
+import { FixtureCalendar } from '@/components/fixture/FixtureCalendar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LogListItem } from '@/components/log/LogListItem';
 
@@ -18,14 +20,20 @@ export default async function CompetitionDetailPage({ params }: { params: Promis
   ]);
   if (!competition) notFound();
 
-  const logs = await getFeed({
-    scope: 'global',
-    viewerId: user?.id ?? null,
-    competitionId: competition.id,
-    limit: 10,
-  });
+  const [logs, fixtures] = await Promise.all([
+    getFeed({
+      scope: 'global',
+      viewerId: user?.id ?? null,
+      competitionId: competition.id,
+      limit: 10,
+    }),
+    getUpcomingEvents({ competitionId: competition.id, limit: 10 }),
+  ]);
 
   const theme = getCompetitionTheme(competition.slug);
+  // getCompetitionBySlug's events list is status-agnostic; the scheduled ones
+  // already have their own "Fikstür" section above, so keep them out of here.
+  const finishedEvents = competition.events.filter((event) => event.status !== 'scheduled');
 
   return (
     <div>
@@ -45,16 +53,21 @@ export default async function CompetitionDetailPage({ params }: { params: Promis
       </div>
 
       <div className="mx-4 mb-2.5 mt-4 border-b border-line pb-1.5 lg:mx-8">
-        <h2 className="font-display text-[13.5px] font-bold uppercase tracking-wider text-dim">Fikstür &amp; sonuçlar</h2>
+        <h2 className="font-display text-[13.5px] font-bold uppercase tracking-wider text-dim">Fikstür</h2>
       </div>
-      {competition.events.length ? (
+      <FixtureCalendar events={fixtures} />
+
+      <div className="mx-4 mb-2.5 mt-5 border-b border-line pb-1.5 lg:mx-8">
+        <h2 className="font-display text-[13.5px] font-bold uppercase tracking-wider text-dim">Sonuçlar</h2>
+      </div>
+      {finishedEvents.length ? (
         <div className="grid grid-cols-3 gap-2 px-4 pb-1 lg:grid-cols-6 lg:gap-3 lg:px-8">
-          {competition.events.map((event) => (
+          {finishedEvents.map((event) => (
             <EventPosterCard key={event.id} event={event} />
           ))}
         </div>
       ) : (
-        <EmptyState>Bu turnuvadan henüz bir event yok.</EmptyState>
+        <EmptyState>Bu turnuvadan henüz oynanmış bir event yok.</EmptyState>
       )}
 
       {standings && standings.isMeaningful ? (
