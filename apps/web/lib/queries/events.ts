@@ -338,6 +338,46 @@ export async function searchEvents(params: EventSearchParams): Promise<EventCard
   return rows.map((row) => ({ ...toEventCardBase(row), logCount: row.log_count }));
 }
 
+export interface PendingToLogParams {
+  viewerId: string;
+  sportSlugs?: string[] | undefined;
+  limit: number;
+}
+
+// Backs the home sidebar's "Loglamayı bekliyor" panel. There's no watchlist
+// table in the schema — this derives the closest honest signal instead:
+// finished events in the viewer's most-logged sports that the viewer hasn't
+// logged yet. Falls back to any sport when the viewer has no logs at all.
+export async function getPendingToLog(params: PendingToLogParams): Promise<EventCard[]> {
+  const where: string[] = [
+    `e.status = 'finished'`,
+    `not exists (select 1 from log l where l.event_id = e.id and l.user_id = $1)`,
+  ];
+  const values: unknown[] = [params.viewerId];
+
+  if (params.sportSlugs?.length) {
+    values.push(params.sportSlugs);
+    where.push(`s.slug = any($${values.length}::text[])`);
+  }
+
+  values.push(params.limit);
+
+  const rows = await query<EventCardRow>(
+    `select ${EVENT_CARD_FIELDS_SQL},
+            (select count(*) from log l where l.event_id = e.id and l.visibility = 'public') as log_count
+       from event e
+       join sport s on s.id = e.sport_id
+       left join competition c on c.id = e.competition_id
+       left join venue v on v.id = e.venue_id
+      where ${where.join(' and ')}
+      order by e.starts_at desc nulls last
+      limit $${values.length}`,
+    values,
+  );
+
+  return rows.map((row) => ({ ...toEventCardBase(row), logCount: row.log_count }));
+}
+
 export interface UpcomingEventsParams {
   /** Scope to the viewer's followed/most-logged sports; omit for everyone. */
   sportSlugs?: string[] | undefined;
@@ -350,7 +390,9 @@ export interface UpcomingEventsParams {
 // not a search box) that overloading searchEvents' sort/status semantics
 // would risk the existing callers more than a few duplicated lines here do.
 export async function getUpcomingEvents(params: UpcomingEventsParams): Promise<EventCard[]> {
-  const where: string[] = [`e.status = 'scheduled'`, `e.starts_at >= now()`];
+  // A live match's starts_at is already in the past by definition — only the
+  // still-scheduled ones need the "in the future" bound.
+  const where: string[] = [`e.status in ('scheduled', 'live')`, `(e.status = 'live' or e.starts_at >= now())`];
   const values: unknown[] = [];
 
   if (params.sportSlugs?.length) {

@@ -1,4 +1,4 @@
-import { query, queryMaybeOne, transaction } from '@vidi/db';
+import { query, queryMaybeOne, queryOne, transaction } from '@vidi/db';
 import { computeCoverage, pointToStars, starsToPoint, type Coverage } from '@vidi/shared';
 
 import { notFound, unprocessable } from '../http';
@@ -269,6 +269,26 @@ export async function getViewerTopSports(
       limit $2`,
     [userId, limit],
   );
+}
+
+export interface ViewerStats {
+  eventCount: number;
+  stadiumCount: number;
+  listCount: number;
+}
+
+// Backs the home sidebar's "Senin arşivin" panel. All three numbers come from
+// this one round trip (scalar subqueries, no FROM needed) rather than three
+// separate calls to different query files.
+export async function getViewerStats(userId: string): Promise<ViewerStats> {
+  const row = await queryOne<{ event_count: number; stadium_count: number; list_count: number }>(
+    `select
+       (select count(*) from log where user_id = $1)::int as event_count,
+       (select count(*) from log where user_id = $1 and medium = 'stadium')::int as stadium_count,
+       (select count(*) from list where user_id = $1)::int as list_count`,
+    [userId],
+  );
+  return { eventCount: row.event_count, stadiumCount: row.stadium_count, listCount: row.list_count };
 }
 
 export async function getLogOwner(id: string): Promise<string | null> {

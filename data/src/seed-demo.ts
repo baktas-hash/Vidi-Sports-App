@@ -720,6 +720,59 @@ async function main(): Promise<void> {
         daysFromNow(8, 10, 30), 'The Ashes',
       );
 
+      // --- live fixtures ---------------------------------------------------
+      // A live match's starts_at is in the (recent) past with no final score
+      // yet — the home sidebar's compact calendar renders these with a
+      // pulsing "canlı" badge instead of a kickoff time.
+      async function liveFixture(
+        sportId: string,
+        competitionId: string,
+        seasonId: string,
+        formatId: string,
+        venueId: string,
+        home: string,
+        away: string,
+        homeEntityId: string,
+        awayEntityId: string,
+        startedMinutesAgo: number,
+        competitionSlugHint: string,
+      ): Promise<string> {
+        const startsAt = new Date(Date.now() - startedMinutesAgo * 60_000);
+        const eventId = await id(
+          client,
+          `insert into event (sport_id, competition_id, season_id, format_id, venue_id, slug, starts_at, status)
+           values ($1, $2, $3, $4, $5, $6, $7, 'live')
+           returning id`,
+          [
+            sportId, competitionId, seasonId, formatId, venueId,
+            eventSlug({
+              sides: [home, away],
+              competition: competitionSlugHint,
+              date: startsAt.toISOString().slice(0, 10),
+              suffix: 'canli',
+            }),
+            startsAt,
+          ],
+        );
+        await client.query(
+          `insert into event_participant (event_id, entity_id, side) values ($1, $2, 1), ($1, $3, 2)`,
+          [eventId, homeEntityId, awayEntityId],
+        );
+        return eventId;
+      }
+
+      await liveFixture(
+        basketball, nba, nba2526, basketballRegulation, paycomCenter,
+        'Oklahoma City Thunder', 'Boston Celtics',
+        clubIds.get('Oklahoma City Thunder')!, clubIds.get('Boston Celtics')!,
+        35, 'NBA',
+      );
+      await liveFixture(
+        volleyball, sultanlarLigi, sultanlarLigi2526, volleyballBestOf5, burhanFelek,
+        'VakıfBank', 'Fenerbahçe', clubIds.get('VakıfBank')!, clubIds.get('Fenerbahçe')!,
+        50, 'Voleybol',
+      );
+
       // --- user + logs ---------------------------------------------------
       // burkay gets a real password so `npm run dev` + POST /api/auth/login
       // works right away. The three below stay signup-less like burkay used

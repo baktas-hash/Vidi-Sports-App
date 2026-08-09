@@ -40,3 +40,15 @@ body {
   color: var(--ink);
   font-family: var(--font-sans);
 }
+
+/* Ticker marquee: the track is the content duplicated once, so translating
+   exactly -50% loops seamlessly — no Tailwind utility covers an infinite
+   horizontal scroll, hence the one bespoke keyframe in this file. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}

@@ -1,8 +1,10 @@
 import Link from 'next/link';
 
 import { getSessionUser } from '@/lib/auth/session';
+import { searchEvents } from '@/lib/queries/events';
 import { Header } from '@/components/ui/Header';
 import { TabBar } from '@/components/ui/TabBar';
+import { Ticker } from '@/components/ui/Ticker';
 import { TopNav } from '@/components/ui/TopNav';
 
 // Not an auth gate — most of the app works logged out (searchEvents/getFeed
@@ -15,7 +17,10 @@ import { TopNav } from '@/components/ui/TopNav';
 // grids (each page opts into the extra width itself; list/grid pages do,
 // article-shaped pages like an event or a log stay reading-width).
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getSessionUser();
+  const [user, recentScores] = await Promise.all([
+    getSessionUser(),
+    searchEvents({ status: 'finished', limit: 10 }),
+  ]);
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -25,6 +30,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="hidden border-b border-line lg:block">
         <TopNav currentUser={user} />
       </div>
+
+      <Ticker events={recentScores} />
 
       <div className="mx-auto w-full max-w-2xl lg:max-w-6xl">
         <main className="pb-6 lg:pb-16">{children}</main>
