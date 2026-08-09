@@ -1,4 +1,4 @@
-import { queryMaybeOne, queryOne } from '@vidi/db';
+import { query, queryMaybeOne, queryOne } from '@vidi/db';
 
 export interface UserProfile {
   handle: string;
@@ -29,6 +29,32 @@ interface CountsRow {
 export async function getUserIdByHandle(handle: string): Promise<string | null> {
   const row = await queryMaybeOne<{ id: string }>('select id from app_user where handle = $1', [handle]);
   return row?.id ?? null;
+}
+
+export interface FollowedUser {
+  handle: string;
+  displayName: string | null;
+  logCount: number;
+}
+
+interface FollowingRow {
+  handle: string;
+  display_name: string | null;
+  log_count: number;
+}
+
+// Backs the feed sidebar's "Takip ettiklerin" panel.
+export async function getFollowing(userId: string): Promise<FollowedUser[]> {
+  const rows = await query<FollowingRow>(
+    `select u.handle, u.display_name,
+            (select count(*) from log l where l.user_id = u.id and l.visibility = 'public')::int as log_count
+       from follow fo
+       join app_user u on u.id = fo.followee_id
+      where fo.follower_id = $1
+      order by u.handle`,
+    [userId],
+  );
+  return rows.map((row) => ({ handle: row.handle, displayName: row.display_name, logCount: row.log_count }));
 }
 
 export async function getUserProfile(
